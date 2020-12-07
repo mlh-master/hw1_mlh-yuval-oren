@@ -18,9 +18,16 @@ def pred_log(logreg, X_train, y_train, X_test, flag=False):
     :param flag: A boolean determining whether to return the predicted he probabilities of the classes (relevant after Q11)
     :return: A two elements tuple containing the predictions and the weightning matrix
     """
-    # ------------------ IMPLEMENT YOUR CODE HERE:-----------------------------
 
-    # -------------------------------------------------------------------------
+    clf=logreg.fit(X_train, y_train)
+    w_log = clf.coef_
+    
+    if (flag == False):
+        y_pred_log = clf.predict(X_test)
+    else:
+        y_pred_log = clf.predict_proba(X_test)
+
+
     return y_pred_log, w_log
 
 
@@ -82,9 +89,23 @@ def cv_kfold(X, y, C, penalty, K, mode):
             k = 0
             for train_idx, val_idx in kf.split(X, y):
                 x_train, x_val = X.iloc[train_idx], X.iloc[val_idx]
-        # ------------------ IMPLEMENT YOUR CODE HERE:-----------------------------
+                y_train, y_val = y[train_idx], y[val_idx]
+                x_train = nsd(x_train, mode=mode, flag=False)
+                x_val = nsd(x_val, mode=mode, flag=False)
+                y_pred_val, w = pred_log(logreg, x_train, y_train, x_val, flag=True)
+                loss_val_vec[k] = log_loss(y_val, y_pred_val)
+                temp = {}
+                k += 1
+            mu = loss_val_vec.mean()
+            sigma = loss_val_vec.std()
+            temp['C'] = c
+            temp['penalty'] = p
+            temp['mu'] = mu
+            temp['sigma'] = sigma
+            validation_dict.append(temp)
+            temp = {}
 
-        # --------------------------------------------------------------------------
+
     return validation_dict
 
 
@@ -97,8 +118,14 @@ def odds_ratio(w, X, selected_feat='LB'):
     :return: odds: median odds of all patients for the selected feature and label
              odds_ratio: the odds ratio of the selected feature and label
     """
-    # ------------------ IMPLEMENT YOUR CODE HERE:-----------------------------
-
-    # --------------------------------------------------------------------------
+    
+    featnum = X.columns.get_loc(selected_feat)
+    wi_normal = w[0, featnum]
+    wi_row = w[0, :]
+    wi_2D = wi_row.reshape([1, -1])
+    wi_transpose = np.transpose(wi_2D)
+    odd_ratio = np.exp(wi_normal)
+    odds_raw = 1 / (np.exp(-X.to_numpy() @ wi_transpose))
+    odds = np.median(odds_raw)
 
     return odds, odd_ratio
